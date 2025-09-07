@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.regex.Pattern;
+
 
 @RequiredArgsConstructor
 public class SolicitudUseCase {
@@ -17,19 +17,15 @@ public class SolicitudUseCase {
     private final TipoPrestamoRepository tipoPrestamoRepository;
     // NOTA: Aún no necesitamos el EstadoRepository, lo usaremos en futuras HU.
 
-    // Expresión regular para una validación básica de email.
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(
-            "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"
-    );
-
-    public Mono<Solicitud> crearSolicitud(Solicitud solicitud) {
+    public Mono<Solicitud> crearSolicitud(Solicitud solicitud, String emailAutenticado) {
+        if (!emailAutenticado.equals(solicitud.getEmail())) {
+            return Mono.error(new BusinessValidationException(Constants.ERROR_EMAIL_NO_AUTENTICADO));
+        }
         return Mono.just(solicitud)
                 .flatMap(this::validarDatosEntrada)
                 .flatMap(this::validarTipoPrestamoYLimites)
                 .map(solicitudValidada -> {
-                    // Asignamos el estado inicial directamente.
-                    // En un escenario real, buscaríamos el ID del estado "RECIBIDA".
-                    // Por simplicidad para la HU2, asumimos que el ID del estado inicial es 1.
+                    // Asignamos el estado inicial directamente estado "RECIBIDA".
                     return solicitudValidada.toBuilder().idEstado(1L).build();
                 })
                 .flatMap(solicitudRepository::guardarSolicitud);
@@ -37,7 +33,7 @@ public class SolicitudUseCase {
 
     private Mono<Solicitud> validarDatosEntrada(Solicitud solicitud) {
         // Validación del formato del email
-        if (solicitud.getEmail() == null || solicitud.getEmail().isBlank() || !EMAIL_PATTERN.matcher(solicitud.getEmail()).matches()) {
+        if (solicitud.getEmail() == null || solicitud.getEmail().isBlank() || !Constants.EMAIL_PATTERN.matcher(solicitud.getEmail()).matches()) {
             return Mono.error(new BusinessValidationException(Constants.ERROR_FORMATO_EMAIL_INVALIDO));
         }
         if (solicitud.getMonto() == null || solicitud.getMonto().compareTo(BigDecimal.ZERO) <= 0 ||

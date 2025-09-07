@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 spring:
   application:
     name: "solicitudes"
@@ -30,4 +30,8 @@ management:
       probes:
         enabled: true
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+  allowed-origins: "http://localhost:4200,http://localhost:8081"
+jwt:
+  secret: EsteEsUnSecretoSuperLargoYComplejoParaMiAplicacionCrediYaNoCompartir
+  expiration:
+    ms: 86400000 # 24 horas

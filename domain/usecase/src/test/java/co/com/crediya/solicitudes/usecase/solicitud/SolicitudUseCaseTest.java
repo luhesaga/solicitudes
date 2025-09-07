@@ -11,19 +11,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-
 import java.math.BigDecimal;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
-public class SolicitudUseCaseTest {
+class SolicitudUseCaseTest { // Se cambió a 'class' en lugar de 'public class' por convención
 
     @Mock
     private SolicitudRepository solicitudRepository;
@@ -35,10 +35,10 @@ public class SolicitudUseCaseTest {
 
     private Solicitud solicitudValida;
     private TipoPrestamo tipoPrestamoValido;
+    private String emailAutenticadoValido;
 
     @BeforeEach
     void setUp() {
-        // Objeto base para un tipo de préstamo válido
         tipoPrestamoValido = TipoPrestamo.builder()
                 .idTipoPrestamo(1L)
                 .nombre("Libre Inversión")
@@ -46,11 +46,12 @@ public class SolicitudUseCaseTest {
                 .montoMaximo(new BigDecimal("50000000.00"))
                 .build();
 
-        // Objeto base para una solicitud válida que cumple con los rangos del tipo de préstamo
+        emailAutenticadoValido = "test@example.com";
+
         solicitudValida = Solicitud.builder()
                 .monto(new BigDecimal("5000000.00"))
                 .plazo(24)
-                .email("test@example.com")
+                .email(emailAutenticadoValido) // El email de la solicitud coincide con el autenticado
                 .idTipoPrestamo(1L)
                 .build();
     }
@@ -59,15 +60,13 @@ public class SolicitudUseCaseTest {
     @DisplayName("Debería crear una solicitud exitosamente cuando todos los datos son válidos")
     void deberiaCrearSolicitudExitosamente() {
         // Arrange
-        // Simulamos que el tipo de préstamo existe
         when(tipoPrestamoRepository.findById(anyLong())).thenReturn(Mono.just(tipoPrestamoValido));
-
-        // Simulamos que el guardado en la BD es exitoso
         Solicitud solicitudGuardada = solicitudValida.toBuilder().idSolicitud(100L).idEstado(1L).build();
         when(solicitudRepository.guardarSolicitud(any(Solicitud.class))).thenReturn(Mono.just(solicitudGuardada));
 
         // Act
-        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida);
+        // CAMBIO: Se pasa el email del usuario autenticado como segundo parámetro
+        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida, emailAutenticadoValido);
 
         // Assert
         StepVerifier.create(resultado)
@@ -75,15 +74,34 @@ public class SolicitudUseCaseTest {
                 .verifyComplete();
     }
 
+    // --- INICIO DE LA NUEVA PRUEBA DE SEGURIDAD ---
+    @Test
+    @DisplayName("Debería lanzar excepción si el email autenticado no coincide con el de la solicitud")
+    void deberiaLanzarErrorSiEmailNoCoincide() {
+        // Arrange
+        String otroEmail = "atacante@example.com";
+
+        // Act
+        // CAMBIO: Se llama al método con el email de la solicitud y un email de autenticación DIFERENTE
+        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida, otroEmail);
+
+        // Assert
+        StepVerifier.create(resultado)
+                .expectErrorMatches(throwable -> throwable instanceof BusinessValidationException &&
+                        throwable.getMessage().contains("No tiene permiso"))
+                .verify();
+    }
+    // --- FIN DE LA NUEVA PRUEBA ---
+
     @Test
     @DisplayName("Debería lanzar excepción si el tipo de préstamo no existe")
     void deberiaLanzarErrorCuandoTipoPrestamoNoExiste() {
         // Arrange
-        // Simulamos que el tipo de préstamo NO se encuentra en la BD
         when(tipoPrestamoRepository.findById(anyLong())).thenReturn(Mono.empty());
 
         // Act
-        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida);
+        // CAMBIO: Se pasa el email del usuario autenticado
+        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida, emailAutenticadoValido);
 
         // Assert
         StepVerifier.create(resultado)
@@ -96,11 +114,12 @@ public class SolicitudUseCaseTest {
     @DisplayName("Debería lanzar excepción si el monto es menor al mínimo permitido")
     void deberiaLanzarErrorCuandoMontoEsMenorAlMinimo() {
         // Arrange
-        solicitudValida.setMonto(new BigDecimal("500000.00")); // Monto por debajo del millón
+        solicitudValida.setMonto(new BigDecimal("500000.00"));
         when(tipoPrestamoRepository.findById(anyLong())).thenReturn(Mono.just(tipoPrestamoValido));
 
         // Act
-        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida);
+        // CAMBIO: Se pasa el email del usuario autenticado
+        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida, emailAutenticadoValido);
 
         // Assert
         StepVerifier.create(resultado)
@@ -116,7 +135,8 @@ public class SolicitudUseCaseTest {
         solicitudValida.setMonto(BigDecimal.ZERO);
 
         // Act
-        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida);
+        // CAMBIO: Se pasa el email del usuario autenticado
+        Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(solicitudValida, emailAutenticadoValido);
 
         // Assert
         StepVerifier.create(resultado)
