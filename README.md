@@ -1,47 +1,136 @@
-# Proyecto Base Implementando Clean Architecture
+# Microservicio de Solicitudes - CrediYa
 
-## Antes de Iniciar
+Este microservicio es el componente central para la gestión del ciclo de vida de las solicitudes de préstamos en la plataforma **CrediYa**. Su responsabilidad principal es procesar, validar y almacenar todas las nuevas solicitudes de crédito generadas por los usuarios.
 
-Empezaremos por explicar los diferentes componentes del proyectos y partiremos de los componentes externos, continuando con los componentes core de negocio (dominio) y por último el inicio y configuración de la aplicación.
+El servicio está construido siguiendo los principios de la **Arquitectura Limpia (Hexagonal)** para garantizar su autonomía, escalabilidad y facilidad de mantenimiento dentro del ecosistema de microservicios.
 
-Lee el artículo [Clean Architecture — Aislando los detalles](https://medium.com/bancolombia-tech/clean-architecture-aislando-los-detalles-4f9530f35d7a)
+## Historia de Usuario Implementada (HU2): Crear Solicitud de Préstamo
 
-# Arquitectura
+La funcionalidad principal de este microservicio es permitir a los usuarios **crear una nueva solicitud de préstamo**.
 
-![Clean Architecture](https://miro.medium.com/max/1400/1*ZdlHz8B0-qu9Y-QO3AXR_w.png)
+**Funcionalidades Clave Implementadas:**
+* Exposición de un endpoint `POST` para registrar nuevas solicitudes.
+* Recepción de los datos clave del préstamo: `monto`, `plazo`, `email` del cliente y `id` del tipo de préstamo.
+* **Validación robusta de la información:**
+    * Verifica que el tipo de préstamo seleccionado exista en el sistema.
+    * Valida que el monto solicitado se encuentre dentro de los rangos (mínimo y máximo) permitidos para ese tipo de préstamo.
+    * Asegura que los datos de entrada básicos (email, monto, plazo) sean válidos.
+* Asignación automática del estado inicial **"RECIBIDA"** a toda nueva solicitud.
+* Persistencia de la solicitud validada y enriquecida en la base de datos.
+* Gestión de errores clara y consistente a través de respuestas HTTP bien definidas.
 
-## Domain
+---
 
-Es el módulo más interno de la arquitectura, pertenece a la capa del dominio y encapsula la lógica y reglas del negocio mediante modelos y entidades del dominio.
+## ?? Arquitectura y Tecnologías
 
-## Usecases
+* **Arquitectura**: Limpia / Hexagonal (Scaffold Bancolombia).
+* **Lenguaje**: Java 17
+* **Framework**: Spring Boot 3 con WebFlux (Programación Reactiva)
+* **Base de Datos**: PostgreSQL
+* **Capa de Persistencia**: R2DBC (Reactiva)
+* **Gestor de Dependencias**: Gradle
 
-Este módulo gradle perteneciente a la capa del dominio, implementa los casos de uso del sistema, define lógica de aplicación y reacciona a las invocaciones desde el módulo de entry points, orquestando los flujos hacia el módulo de entities.
+---
 
-## Infrastructure
+## ? Estructura del Proyecto
 
-### Helpers
+El proyecto mantiene una estricta separación de responsabilidades a través de su estructura modular:
 
-En el apartado de helpers tendremos utilidades generales para los Driven Adapters y Entry Points.
+* `applications/app-service`: Módulo principal que ensambla y ejecuta la aplicación.
+* `domain/model`: Contiene las entidades (`Solicitud`, `TipoPrestamo`, `Estado`) y los puertos (`...Repository`).
+* `domain/usecase`: Contiene la lógica de negocio pura (`SolicitudUseCase`).
+* `infrastructure/entry-points/api-rest`: Implementa el controlador REST (`ApiRest.java`).
+* `infrastructure/driven-adapters/r2dbc-postgresql`: Implementa la comunicación con la base de datos PostgreSQL.
 
-Estas utilidades no están arraigadas a objetos concretos, se realiza el uso de generics para modelar comportamientos
-genéricos de los diferentes objetos de persistencia que puedan existir, este tipo de implementaciones se realizan
-basadas en el patrón de diseño [Unit of Work y Repository](https://medium.com/@krzychukosobudzki/repository-design-pattern-bc490b256006)
+---
 
-Estas clases no puede existir solas y debe heredarse su compartimiento en los **Driven Adapters**
+## ? Cómo Ejecutar el Proyecto
 
-### Driven Adapters
+### Pre-requisitos
+* JDK 17 o superior.
+* Gradle 7.x o superior.
+* Tener una instancia de PostgreSQL corriendo.
 
-Los driven adapter representan implementaciones externas a nuestro sistema, como lo son conexiones a servicios rest,
-soap, bases de datos, lectura de archivos planos, y en concreto cualquier origen y fuente de datos con la que debamos
-interactuar.
+### 1. Configuración de la Base de Datos
+Antes de ejecutar la aplicación, es necesario crear la base de datos y las tablas correspondientes.
+1.  Crea una nueva base de datos en PostgreSQL: `CREATE DATABASE solicitudes_db;`
+2.  Conéctate a `solicitudes_db` y ejecuta los scripts de creación de tablas e inserción de datos iniciales que se encuentran en el proyecto.
 
-### Entry Points
+### 2. Configuración de la Aplicación
+1.  Navega al archivo `solicitudes/applications/app-service/src/main/resources/application.yml`.
+2.  Asegúrate de que las propiedades de conexión coincidan con tu base de datos local, bajo el prefijo `adapters.r2dbc`:
+    ```yaml
+    adapters:
+      r2dbc:
+        host: localhost
+        port: 5432
+        database: solicitudes_db
+        schema: public
+        username: tu_usuario
+        password: tu_contraseña
+    ```
 
-Los entry points representan los puntos de entrada de la aplicación o el inicio de los flujos de negocio.
+### 3. Ejecución
+Abre una terminal en la raíz de este microservicio y ejecuta:
 
-## Application
+```bash
+./gradlew bootRun
+```
+El servicio estará disponible en `http://localhost:8080`.
 
-Este módulo es el más externo de la arquitectura, es el encargado de ensamblar los distintos módulos, resolver las dependencias y crear los beans de los casos de use (UseCases) de forma automática, inyectando en éstos instancias concretas de las dependencias declaradas. Además inicia la aplicación (es el único módulo del proyecto donde encontraremos la función “public static void main(String[] args)”.
+---
 
-**Los beans de los casos de uso se disponibilizan automaticamente gracias a un '@ComponentScan' ubicado en esta capa.**
+## ? Endpoints de la API (HU2)
+
+### Crear una Nueva Solicitud de Préstamo
+* **Método:** `POST`
+* **URL:** `/api/v1/solicitudes`
+* **Descripción:** Crea una nueva solicitud de préstamo.
+
+**Ejemplo de Request Body (`SolicitudDTO`):**
+```json
+{
+  "monto": 1500000.00,
+  "plazo": 24,
+  "email": "nuevo.cliente@example.com",
+  "idTipoPrestamo": 1
+}
+```
+
+**Respuesta Exitosa (201 CREATED):**
+```json
+{
+    "idSolicitud": 1,
+    "monto": 1500000.00,
+    "plazo": 24,
+    "email": "nuevo.cliente@example.com",
+    "idEstado": 1,
+    "idTipoPrestamo": 1
+}
+```
+
+**Respuesta de Error (400 BAD REQUEST):**
+```json
+{
+    "message": "El monto solicitado está fuera de los rangos permitidos para el tipo de préstamo."
+}
+```
+
+### Documentación Interactiva (Swagger)
+La documentación completa de la API, con modelos y la capacidad de probar los endpoints, está disponible en:
+
+* **URL de Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+---
+
+## ? Calidad de Código
+
+### Pruebas
+Se han implementado pruebas unitarias para el `SolicitudUseCase` que validan todos los flujos de la lógica de negocio, alcanzando una **cobertura superior al 90%**. Para ejecutar las pruebas:
+
+```bash
+./gradlew test
+```
+
+### Análisis Estático de Código
+Se recomienda el uso del plugin **SonarLint** en el IDE para la validación continua de la calidad del código.
