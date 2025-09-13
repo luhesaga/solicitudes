@@ -1,6 +1,7 @@
 package co.com.crediya.solicitudes.api.handler;
 
 import co.com.crediya.solicitudes.api.dto.ErrorDTO;
+import co.com.crediya.solicitudes.api.dto.ErrorMessages;
 import co.com.crediya.solicitudes.model.exception.BusinessValidationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurity
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,9 +30,11 @@ public class GlobalExceptionHandlerTest {
         @GetMapping("/test/business")
         public String business() { throw new BusinessValidationException("Error de negocio"); }
         @GetMapping("/test/status")
-        public String status() { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado inválido"); }
+        public String status() { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status inválido"); }
         @GetMapping("/test/generic")
         public String generic() { throw new RuntimeException("boom"); }
+        @GetMapping("/test/denied")
+        public String denied() { throw new AuthorizationDeniedException("Denied"); }
     }
 
     @Autowired
@@ -42,8 +46,10 @@ public class GlobalExceptionHandlerTest {
                 .uri("/test/business")
                 .exchange()
                 .expectStatus().isBadRequest()
-                .expectBody(ErrorDTO.class)
-                .value(err -> org.junit.jupiter.api.Assertions.assertEquals("Error de negocio", err.getMessage()));
+                .expectBody()
+                .jsonPath("$.code").isEqualTo("400-001")
+                .jsonPath("$.message").isEqualTo("Datos de entrada inválidos")
+                .jsonPath("$.errors[0]").isEqualTo("Error de negocio");
     }
 
     @Test
@@ -54,8 +60,19 @@ public class GlobalExceptionHandlerTest {
                 .expectStatus().isBadRequest()
                 .expectBody(ErrorDTO.class)
                 .value(err -> org.junit.jupiter.api.Assertions.assertEquals(
-                        new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado inválido").getMessage(),
+                        new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status inválido").getMessage(),
                         err.getMessage()));
+    }
+
+    @Test
+    void whenAccessDenied_thenReturnsForbiddenWithMessage() {
+        webTestClient.get()
+                .uri("/test/denied")
+                .exchange()
+                .expectStatus().isForbidden()
+                .expectBody(ErrorDTO.class)
+                .value(err -> org.junit.jupiter.api.Assertions.assertEquals(
+                        ErrorMessages.ACCESS_DENIED, err.getMessage()));
     }
 
     @Test

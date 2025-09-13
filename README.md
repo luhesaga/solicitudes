@@ -6,7 +6,7 @@ El servicio está construido siguiendo los principios de la **Arquitectura Limpia
 
 ## Historia de Usuario Implementada (HU2): Crear Solicitud de Préstamo
 
-La funcionalidad principal de este microservicio es permitir a los usuarios **crear una nueva solicitud de préstamo**.
+La funcionalidad principal de este microservicio es permitir a los usuarios **crear una nueva request de préstamo**.
 
 **Funcionalidades Clave Implementadas:**
 * Exposición de un endpoint `POST` para registrar nuevas solicitudes.
@@ -15,8 +15,8 @@ La funcionalidad principal de este microservicio es permitir a los usuarios **cr
     * Verifica que el tipo de préstamo seleccionado exista en el sistema.
     * Valida que el monto solicitado se encuentre dentro de los rangos (mínimo y máximo) permitidos para ese tipo de préstamo.
     * Asegura que los datos de entrada básicos (email, monto, plazo) sean válidos.
-* Asignación automática del estado inicial **"RECIBIDA"** a toda nueva solicitud.
-* Persistencia de la solicitud validada y enriquecida en la base de datos.
+* Asignación automática del estado inicial **"RECIBIDA"** a toda nueva request.
+* Persistencia de la request validada y enriquecida en la base de datos.
 * Gestión de errores clara y consistente a través de respuestas HTTP bien definidas.
 
 ---
@@ -85,7 +85,7 @@ El servicio estará disponible en `http://localhost:8080`.
 ### Crear una Nueva Solicitud de Préstamo
 * **Método:** `POST`
 * **URL:** `/api/v1/solicitudes`
-* **Descripción:** Crea una nueva solicitud de préstamo.
+* **Descripción:** Crea una nueva request de préstamo.
 
 **Ejemplo de Request Body (`SolicitudDTO`):**
 ```json

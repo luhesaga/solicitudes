@@ -3,10 +3,9 @@ package co.com.crediya.solicitudes.config;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jose.util.StandardCharset;
+import java.nio.charset.StandardCharsets;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
@@ -19,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,7 +38,7 @@ class SecurityConfigTest {
 
         var jwt = decoder.decode(token).block();
         assertNotNull(jwt, "Decoded JWT should not be null");
-        assertEquals("HS512", jwt.getHeaders().get("alg"));
+        assertEquals(JWSAlgorithm.HS512.getName(), jwt.getHeaders().get("alg"));
     }
 
     @Test
@@ -52,7 +52,6 @@ class SecurityConfigTest {
 
     @Test
     void jwtAuthenticationConverter_mapsRolesToAuthorities() {
-        // Build a Jwt with roles claim
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "HS512")
                 .claim("roles", List.of("ROLE_USER", "ADMIN"))
@@ -62,6 +61,7 @@ class SecurityConfigTest {
 
         var converter = config.jwtAuthenticationConverter();
         Mono<? extends AbstractAuthenticationToken> monoAuth = converter.convert(jwt);
+        assertNotNull(monoAuth);
         AbstractAuthenticationToken auth = monoAuth.block();
 
         assertNotNull(auth, "Authentication should not be null");
@@ -71,8 +71,6 @@ class SecurityConfigTest {
         assertEquals(2, authorities.size());
     }
 
-
-    // Helper to create a signed HMAC JWT string
     private static String createHmacJwt(String secret, JWSAlgorithm alg, List<String> roles) throws JOSEException, ParseException {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .claim("roles", roles)
@@ -80,19 +78,18 @@ class SecurityConfigTest {
                 .expirationTime(java.util.Date.from(Instant.now().plusSeconds(3600)))
                 .build();
 
-        byte[] keyBytes = secret.getBytes(StandardCharset.UTF_8);
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         SignedJWT signedJWT = new SignedJWT(new JWSHeader(alg), com.nimbusds.jwt.JWTClaimsSet.parse(claims.toJSONObject()));
         MACSigner signer = new MACSigner(keyBytes);
         signedJWT.sign(signer);
 
-        // extra sanity check with local verify
         assertTrue(signedJWT.verify(new MACVerifier(keyBytes)));
 
         return signedJWT.serialize();
     }
 
     @Test
-    void jwtAuthenticationConverter_missingRolesClaim_throwsNullPointer() {
+    void jwtAuthenticationConverter_missingRolesClaim_resultsInNoAuthorities() {
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "HS512")
                 .issuedAt(Instant.now())
@@ -100,8 +97,9 @@ class SecurityConfigTest {
                 .build();
 
         var converter = config.jwtAuthenticationConverter();
-        // Since SecurityConfig does roles.stream() without null-check, expect NPE
-        assertThrows(NullPointerException.class, () -> converter.convert(jwt).block());
+        AbstractAuthenticationToken auth = Objects.requireNonNull(converter.convert(jwt)).block();
+        assertNotNull(auth);
+        assertTrue(auth.getAuthorities().isEmpty());
     }
 
     @Test
@@ -114,7 +112,7 @@ class SecurityConfigTest {
                 .build();
 
         var converter = config.jwtAuthenticationConverter();
-        AbstractAuthenticationToken auth = converter.convert(jwt).block();
+        AbstractAuthenticationToken auth = Objects.requireNonNull(converter.convert(jwt)).block();
         assertNotNull(auth);
         assertTrue(auth.getAuthorities().isEmpty());
     }
@@ -137,14 +135,13 @@ class SecurityConfigTest {
         assertThrows(RuntimeException.class, () -> decoder.decode(expiredToken).block());
     }
 
-    // Helper to create an already expired JWT
     private static String createExpiredHmacJwt(String secret, JWSAlgorithm alg, List<String> roles) throws Exception {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .claim("roles", roles)
                 .issueTime(java.util.Date.from(Instant.now().minusSeconds(7200)))
                 .expirationTime(java.util.Date.from(Instant.now().minusSeconds(3600)))
                 .build();
-        byte[] keyBytes = secret.getBytes(StandardCharset.UTF_8);
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         SignedJWT signedJWT = new SignedJWT(new JWSHeader(alg), com.nimbusds.jwt.JWTClaimsSet.parse(claims.toJSONObject()));
         MACSigner signer = new MACSigner(keyBytes);
         signedJWT.sign(signer);

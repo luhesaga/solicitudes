@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebFluxSecurity
-@EnableReactiveMethodSecurity // Habilita la seguridad por método
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -43,9 +43,8 @@ public class SecurityConfig {
 
     @Bean
     public ReactiveJwtDecoder reactiveJwtDecoder(@Value("${jwt.secret}") String secretKey) {
-        var key = new SecretKeySpec(secretKey.getBytes(), "HmacSHA512");
+        var key = new SecretKeySpec(secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA512");
 
-        // LE DECIMOS EXPLÍCITAMENTE QUE USE HS512
         return NimbusReactiveJwtDecoder.withSecretKey(key)
                 .macAlgorithm(MacAlgorithm.HS512)
                 .build();
@@ -55,6 +54,9 @@ public class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
             List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles == null) {
+                return java.util.Collections.emptyList();
+            }
             return roles.stream()
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());

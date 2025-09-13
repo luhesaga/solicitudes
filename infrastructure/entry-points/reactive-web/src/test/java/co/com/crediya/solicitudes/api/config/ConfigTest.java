@@ -1,21 +1,16 @@
 package co.com.crediya.solicitudes.api.config;
 
-import co.com.crediya.solicitudes.api.ApiRest;
 import co.com.crediya.solicitudes.api.handler.GlobalExceptionHandler;
-import co.com.crediya.solicitudes.api.dto.ErrorDTO;
-import co.com.crediya.solicitudes.model.exception.BusinessValidationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @ContextConfiguration(classes = {ConfigTest.TestController.class, GlobalExceptionHandler.class})
 @WebFluxTest(excludeAutoConfiguration = ReactiveSecurityAutoConfiguration.class)
