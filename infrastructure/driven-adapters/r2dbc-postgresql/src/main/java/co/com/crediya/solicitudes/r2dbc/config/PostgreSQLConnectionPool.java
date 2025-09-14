@@ -4,6 +4,7 @@ import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.client.SSLMode;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,20 @@ public class PostgreSQLConnectionPool {
                 .database(Objects.requireNonNull(properties.database(), "database must not be null"))
                 .username(Objects.requireNonNull(properties.username(), "username must not be null"))
                 .password(Objects.requireNonNull(properties.password(), "password must not be null"));
+
+        SSLMode sslMode = SSLMode.DISABLE;
+        if (properties.sslMode() != null && !properties.sslMode().isBlank()) {
+            try {
+                sslMode = SSLMode.valueOf(properties.sslMode().trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                // Fallback si el valor no es válido
+                sslMode = SSLMode.REQUIRE;
+            }
+        } else if (Boolean.TRUE.equals(properties.ssl())) {
+            // Si no hay sslMode pero ssl=true, forzamos REQUIRE
+            sslMode = SSLMode.REQUIRE;
+        }
+        builder.sslMode(sslMode);
 
         PostgresqlConnectionConfiguration dbConfiguration = builder.build();
 
