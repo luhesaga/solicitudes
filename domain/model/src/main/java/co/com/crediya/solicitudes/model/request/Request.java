@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -17,6 +18,7 @@ public class Request {
     private BigDecimal amount;
     private Integer term;
     private String email;
+    private LocalDateTime creationDate;
     private Long statusId;
     private Long loanTypeId;
     private String loanTypeName;

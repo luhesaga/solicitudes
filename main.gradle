@@ -41,6 +41,7 @@ subprojects {
         testCompileOnly  "org.projectlombok:lombok:${lombokVersion}"
         testAnnotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        implementation platform("software.amazon.awssdk:bom:2.25.66")
     }
 
     tasks.withType(Test).configureEach {

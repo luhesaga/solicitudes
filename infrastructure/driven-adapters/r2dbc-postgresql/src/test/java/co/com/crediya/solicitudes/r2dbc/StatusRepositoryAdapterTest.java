@@ -19,7 +19,7 @@ import static org.mockito.BDDMockito.given;
 class StatusRepositoryAdapterTest {
 
     @Mock
-    private EstadoDataRepository estadoDataRepository;
+    private StatusDataRepository statusDataRepository;
 
     @InjectMocks
     private StatusRepositoryAdapter adapter;
@@ -35,7 +35,7 @@ class StatusRepositoryAdapterTest {
     @Test
     void findById_shouldMapAndReturnEstado_whenFound() {
         StatusData data = buildEstadoData(1L, "APROBADO", "Request aprobada");
-        given(estadoDataRepository.findById(1L)).willReturn(Mono.just(data));
+        given(statusDataRepository.findById(1L)).willReturn(Mono.just(data));
 
         StepVerifier.create(adapter.findById(1L))
                 .assertNext(estado -> {
@@ -48,7 +48,7 @@ class StatusRepositoryAdapterTest {
 
     @Test
     void findById_shouldCompleteEmpty_whenNotFound() {
-        given(estadoDataRepository.findById(999L)).willReturn(Mono.empty());
+        given(statusDataRepository.findById(999L)).willReturn(Mono.empty());
 
         StepVerifier.create(adapter.findById(999L))
                 .verifyComplete();
@@ -58,7 +58,7 @@ class StatusRepositoryAdapterTest {
     void findAll_shouldMapAllEstados() {
         StatusData d1 = buildEstadoData(1L, "APROBADO", "Request aprobada");
         StatusData d2 = buildEstadoData(2L, "RECHAZADO", "Request rechazada");
-        given(estadoDataRepository.findAll()).willReturn(Flux.just(d1, d2));
+        given(statusDataRepository.findAll()).willReturn(Flux.just(d1, d2));
 
         StepVerifier.create(adapter.findAll())
                 .assertNext(e -> {
@@ -76,7 +76,7 @@ class StatusRepositoryAdapterTest {
 
     @Test
     void findAll_shouldCompleteEmpty_whenNoData() {
-        given(estadoDataRepository.findAll()).willReturn(Flux.empty());
+        given(statusDataRepository.findAll()).willReturn(Flux.empty());
 
         StepVerifier.create(adapter.findAll())
                 .verifyComplete();
@@ -85,7 +85,7 @@ class StatusRepositoryAdapterTest {
     @Test
     void findByNombre_shouldMapAndReturnEstado_whenFound() {
         StatusData data = buildEstadoData(3L, "PENDIENTE", "Request pendiente");
-        given(estadoDataRepository.findByName("PENDIENTE")).willReturn(Mono.just(data));
+        given(statusDataRepository.findByName("PENDIENTE")).willReturn(Mono.just(data));
 
         StepVerifier.create(adapter.findByName("PENDIENTE"))
                 .assertNext(estado -> {
@@ -98,7 +98,7 @@ class StatusRepositoryAdapterTest {
 
     @Test
     void findByNombre_shouldCompleteEmpty_whenNotFound() {
-        given(estadoDataRepository.findByName(any())).willReturn(Mono.empty());
+        given(statusDataRepository.findByName(any())).willReturn(Mono.empty());
 
         StepVerifier.create(adapter.findByName("DESCONOCIDO"))
                 .verifyComplete();
@@ -107,9 +107,9 @@ class StatusRepositoryAdapterTest {
     @Test
     void methods_shouldPropagateErrors() {
         RuntimeException ex = new RuntimeException("DB error");
-        given(estadoDataRepository.findById(1L)).willReturn(Mono.error(ex));
-        given(estadoDataRepository.findAll()).willReturn(Flux.error(ex));
-        given(estadoDataRepository.findByName("X")).willReturn(Mono.error(ex));
+        given(statusDataRepository.findById(1L)).willReturn(Mono.error(ex));
+        given(statusDataRepository.findAll()).willReturn(Flux.error(ex));
+        given(statusDataRepository.findByName("X")).willReturn(Mono.error(ex));
 
         StepVerifier.create(adapter.findById(1L))
                 .expectErrorMatches(t -> t == ex)

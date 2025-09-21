@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 @Repository
 @RequiredArgsConstructor
 public class StatusRepositoryAdapter implements StatusRepository {
-    private final EstadoDataRepository estadoDataRepository;
+    private final StatusDataRepository statusDataRepository;
 
     private Status toStatusModel(StatusData data) {
         return new Status(data.getId(), data.getName(), data.getDescription());
@@ -19,19 +19,19 @@ public class StatusRepositoryAdapter implements StatusRepository {
 
     @Override
     public Mono<Status> findById(Long id) {
-        return estadoDataRepository.findById(id)
+        return statusDataRepository.findById(id)
                 .map(this::toStatusModel);
     }
 
     @Override
     public Flux<Status> findAll() {
-        return estadoDataRepository.findAll()
+        return statusDataRepository.findAll()
                 .map(this::toStatusModel);
     }
 
     @Override
     public Mono<Status> findByName(String nombre) {
-        return estadoDataRepository.findByName(nombre)
+        return statusDataRepository.findByName(nombre)
                 .map(this::toStatusModel);
     }
 }

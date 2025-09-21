@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 public interface RequestRepository {
     Mono<Request> save(Request request);
     Flux<Request> findForManualReview(int page, int size);
-    // Mono<Request> findById(Long id);
+    Mono<Request> findById(Long id);
+    Mono<Request> update(Request request);
     // Flux<Request> findByEmail(String email);
 }

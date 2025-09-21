@@ -20,21 +20,21 @@ import static org.mockito.Mockito.*;
 
 class RequestRepositoryAdapterTest {
 
-    private StatusDataRepository statusDataRepository;
+    private RequestDataRepository requestDataRepository;
     private ReactiveTransactionManager transactionManager;
 
     private RequestRepositoryAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        statusDataRepository = Mockito.mock(StatusDataRepository.class);
+        requestDataRepository = Mockito.mock(RequestDataRepository.class);
         transactionManager = Mockito.mock(ReactiveTransactionManager.class);
         ReactiveTransaction tx = Mockito.mock(ReactiveTransaction.class);
         when(transactionManager.getReactiveTransaction(any())).thenReturn(Mono.just(tx));
         when(transactionManager.commit(any())).thenReturn(Mono.empty());
         when(transactionManager.rollback(any())).thenReturn(Mono.empty());
 
-        adapter = new RequestRepositoryAdapter(statusDataRepository, transactionManager);
+        adapter = new RequestRepositoryAdapter(requestDataRepository, transactionManager);
     }
 
     @Test
@@ -55,7 +55,7 @@ class RequestRepositoryAdapterTest {
         savedData.setStatusId(request.getStatusId());
         savedData.setLoanTypeId(request.getLoanTypeId());
 
-        when(statusDataRepository.save(any(RequestData.class))).thenReturn(Mono.just(savedData));
+        when(requestDataRepository.save(any(RequestData.class))).thenReturn(Mono.just(savedData));
 
         Mono<Request> result = adapter.save(request);
 
@@ -71,7 +71,7 @@ class RequestRepositoryAdapterTest {
                 .verifyComplete();
 
         ArgumentCaptor<RequestData> captor = ArgumentCaptor.forClass(RequestData.class);
-        verify(statusDataRepository, times(1)).save(captor.capture());
+        verify(requestDataRepository, times(1)).save(captor.capture());
         RequestData dataSent = captor.getValue();
         assertThat(dataSent.getId()).isNull(); // not set before save
         assertThat(dataSent.getAmount()).isEqualByComparingTo("12345.67");
@@ -94,7 +94,7 @@ class RequestRepositoryAdapterTest {
                 .loanTypeId(1L)
                 .build();
 
-        when(statusDataRepository.save(any(RequestData.class)))
+        when(requestDataRepository.save(any(RequestData.class)))
                 .thenReturn(Mono.error(new RuntimeException("db error")));
 
         StepVerifier.create(adapter.save(request))
@@ -127,7 +127,7 @@ class RequestRepositoryAdapterTest {
         d2.setStatusId(2L);
         d2.setLoanTypeId(20L);
 
-        when(statusDataRepository.findForManualReview(size, expectedOffset))
+        when(requestDataRepository.findForManualReview(size, expectedOffset))
                 .thenReturn(Flux.just(d1, d2));
 
         StepVerifier.create(adapter.findForManualReview(page, size))
@@ -149,18 +149,18 @@ class RequestRepositoryAdapterTest {
                 })
                 .verifyComplete();
 
-        verify(statusDataRepository, times(1)).findForManualReview(size, expectedOffset);
+        verify(requestDataRepository, times(1)).findForManualReview(size, expectedOffset);
     }
 
     @Test
     void findForManualReview_whenEmpty_emitsComplete() {
         int page = 0;
         int size = 5;
-        when(statusDataRepository.findForManualReview(size, 0)).thenReturn(Flux.empty());
+        when(requestDataRepository.findForManualReview(size, 0)).thenReturn(Flux.empty());
 
         StepVerifier.create(adapter.findForManualReview(page, size))
                 .verifyComplete();
 
-        verify(statusDataRepository, times(1)).findForManualReview(size, 0);
+        verify(requestDataRepository, times(1)).findForManualReview(size, 0);
     }
 }

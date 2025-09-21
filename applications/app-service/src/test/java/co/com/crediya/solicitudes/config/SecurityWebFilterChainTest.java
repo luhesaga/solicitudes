@@ -22,17 +22,28 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
-@org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+@org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest(useDefaultFilters = false)
 @org.springframework.context.annotation.Import({SecurityConfig.class, SecurityWebFilterChainTest.TestRoutes.class})
 @TestPropertySource(properties = {
-        "jwt.secret=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "jwt.secret=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "SERVER_PORT=0",
+        "ADAPTERS_R2DBC_HOST=localhost",
+        "ADAPTERS_R2DBC_DATABASE=testdb",
+        "ADAPTERS_R2DBC_USERNAME=user",
+        "ADAPTERS_R2DBC_PASSWORD=pass",
+        "JWT_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "JWT_EXPIRATION_MS=86400000",
+        "AWS_QUEUE_URL=http://localhost:4566/000000000000/test-queue",
+        "AWS_ACCESS_KEY_ID=dummy",
+        "AWS_SECRET_ACCESS_KEY=dummy",
+        "spring.profiles.include="
 })
 class SecurityWebFilterChainTest {
 
     @org.springframework.beans.factory.annotation.Autowired
     WebTestClient client;
 
-    @Configuration
+    @org.springframework.boot.test.context.TestConfiguration
     static class TestRoutes {
         @Bean
         RouterFunction<ServerResponse> testRouter() {
@@ -42,7 +53,9 @@ class SecurityWebFilterChainTest {
 
     @Test
     void permitAll_for_swagger_paths_allows_through() {
-        client.get().uri("/v3/api-docs").exchange()
+        // Use a path that definitely matches the permitted pattern "/v3/api-docs/**".
+        // Expect 404 (not 401/403) to verify the request bypasses security and reaches routing.
+        client.get().uri("/v3/api-docs/swagger-config").exchange()
                 .expectStatus().isNotFound();
     }
 

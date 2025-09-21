@@ -51,6 +51,11 @@ class RequestApiRestTest {
         ManualListRequestUseCase manualListRequestUseCase() {
             return org.mockito.Mockito.mock(ManualListRequestUseCase.class);
         }
+
+        @org.springframework.context.annotation.Bean
+        co.com.crediya.solicitudes.usecase.updatestatus.UpdateRequestStatusUseCase updateRequestStatusUseCase() {
+            return org.mockito.Mockito.mock(co.com.crediya.solicitudes.usecase.updatestatus.UpdateRequestStatusUseCase.class);
+        }
     }
 
     @Autowired

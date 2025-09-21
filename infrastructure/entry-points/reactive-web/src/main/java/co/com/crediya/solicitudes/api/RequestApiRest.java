@@ -3,8 +3,10 @@ package co.com.crediya.solicitudes.api;
 import co.com.crediya.solicitudes.api.dto.*;
 import co.com.crediya.solicitudes.api.mapper.RequestMapper;
 import co.com.crediya.solicitudes.model.request.Request;
+import co.com.crediya.solicitudes.model.request.UpdateRequestStatus;
 import co.com.crediya.solicitudes.usecase.list.ManualListRequestUseCase;
 import co.com.crediya.solicitudes.usecase.request.RequestUseCase;
+import co.com.crediya.solicitudes.usecase.updatestatus.UpdateRequestStatusUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,8 +30,9 @@ import java.security.Principal;
 @Tag(name = "Gestión de Solicitudes", description = "Operaciones para crear y consultar solicitudes de préstamo.")
 public class RequestApiRest {
     private final RequestUseCase requestUseCase;
-    private final ManualListRequestUseCase manualListRequestUseCase; // <-- INYECTAR NUEVO USECASE
+    private final ManualListRequestUseCase manualListRequestUseCase;
     private final RequestMapper requestMapper;
+    private final UpdateRequestStatusUseCase updateRequestStatusUseCase;
 
 
     @PostMapping(path = "/solicitudes")
@@ -66,5 +69,28 @@ public class RequestApiRest {
             @RequestParam(name = "size", defaultValue = "10") int size) {
         return manualListRequestUseCase.list(page, size)
                 .map(requestMapper::toEnrichDTO);
+    }
+
+    @PutMapping(path = "/solicitudes/{requestId}")
+    @Operation(summary = "Aprobar o Rechazar una solicitud")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Solicitud actualizada exitosamente.",
+                    content = @Content(schema = @Schema(implementation = GenericResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "El estado proporcionado no es válido."),
+            @ApiResponse(responseCode = "403", description = "El usuario no tiene permisos para esta acción."),
+            @ApiResponse(responseCode = "404", description = "La solicitud no fue encontrada.")
+    })
+    @PreAuthorize("hasAnyRole('ASESOR')")
+    public Mono<GenericResponseDTO<RequestResponseDTO>> updateRequestStatus(
+            @PathVariable("requestId") Long requestId,
+            @RequestBody UpdateStatusDTO updateStatusDTO) {
+
+        UpdateRequestStatus comando = UpdateRequestStatus.builder()
+                .requestId(requestId)
+                .status(updateStatusDTO.getNewStatus())
+                .build();
+
+        return updateRequestStatusUseCase.execute(comando)
+                .map(requestMapper::toSuccessResponse);
     }
 }
