@@ -103,9 +103,14 @@ tasks.register('jacocoMergedReport', JacocoReport) {
 }
 
 tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
     options.compilerArgs = [
             '-Amapstruct.suppressGeneratorTimestamp=true'
     ]
+}
+
+tasks.withType(Test).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
 }
 
 pitestReportAggregate {

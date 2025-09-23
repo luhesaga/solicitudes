@@ -25,7 +25,7 @@ public class SQSSender implements NotificationGateway {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(request))
                 .flatMap(messageBody -> {
                     SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
-                            .queueUrl(properties.queueUrl()) // Obtenemos la URL de las propiedades
+                            .queueUrl(properties.queueUrl())
                             .messageBody(messageBody)
                             .build();
 

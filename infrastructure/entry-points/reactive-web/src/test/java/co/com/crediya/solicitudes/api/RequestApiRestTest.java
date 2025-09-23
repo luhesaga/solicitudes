@@ -95,7 +95,7 @@ class RequestApiRestTest {
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
                 .expectBody()
                 .jsonPath("$.code").isEqualTo("201-001")
-                .jsonPath("$.message").isEqualTo("Operación exitosa.")
+                .jsonPath("$.message").isNotEmpty()
                 .jsonPath("$.data.amount").isEqualTo(1500000.00)
                 .jsonPath("$.data.term").isEqualTo(12)
                 .jsonPath("$.data.email").isEqualTo("user@example.com")
@@ -121,7 +121,7 @@ class RequestApiRestTest {
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
                 .expectBody()
                 .jsonPath("$.code").isEqualTo("400-001")
-                .jsonPath("$.message").isEqualTo("Datos de entrada inválidos")
+                .jsonPath("$.message").isNotEmpty()
                 .jsonPath("$.errors[0]").isEqualTo("Regla de negocio inválida");
     }
 

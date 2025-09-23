@@ -27,7 +27,7 @@ import java.security.Principal;
 @RestController
 @RequestMapping(value = "/api/v1", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
-@Tag(name = "Gestión de Solicitudes", description = "Operaciones para crear y consultar solicitudes de préstamo.")
+@Tag(name = "Gestion de Solicitudes", description = "Operaciones para crear y consultar solicitudes de préstamo.")
 public class RequestApiRest {
     private final RequestUseCase requestUseCase;
     private final ManualListRequestUseCase manualListRequestUseCase;
@@ -85,12 +85,12 @@ public class RequestApiRest {
             @PathVariable("requestId") Long requestId,
             @RequestBody UpdateStatusDTO updateStatusDTO) {
 
-        UpdateRequestStatus comando = UpdateRequestStatus.builder()
+        UpdateRequestStatus command = UpdateRequestStatus.builder()
                 .requestId(requestId)
                 .status(updateStatusDTO.getNewStatus())
                 .build();
 
-        return updateRequestStatusUseCase.execute(comando)
+        return updateRequestStatusUseCase.execute(command)
                 .map(requestMapper::toSuccessResponse);
     }
 }
